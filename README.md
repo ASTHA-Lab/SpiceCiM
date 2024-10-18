@@ -43,7 +43,18 @@ cd SpiceCiM
 
 # Install dependencies (if applicable)
 npm install
-
+```
 ## Usage
+### Designing Neural Network:
+
+### Design Generation:
+
+### Setting-up Simulation Environment:
+
+
 
 ## Features
+
+## License
+
+## Contact
