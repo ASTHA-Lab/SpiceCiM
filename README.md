@@ -29,11 +29,11 @@ This project introduces **SpiceCiM**, a SPICE-based design and optimization fram
 
 This framework pushes the boundary of analog in-memory computing research by enabling accurate, large-scale SPICE simulations for DNN inference, making it a powerful tool for researchers and designers developing the next generation of energy-efficient AI hardware.
 
+## Background
 
 ## Installation
 
-Provide a step-by-step guide on how to install your project locally. For example:
-
+Step-by-step guide on how to install and run **SpiceCiM** locally:
 ```bash
 # Clone the repository
 git clone https://github.com/ASTHA-Lab/SpiceCiM.git
@@ -43,3 +43,7 @@ cd SpiceCiM
 
 # Install dependencies (if applicable)
 npm install
+
+## Usage
+
+## Features
