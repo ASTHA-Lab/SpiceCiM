@@ -9,10 +9,10 @@ S. M. Mojahidul Ahsan, M. Sakib Shahriar, Mrittika Chowdhury, Tanvir Hossain, Md
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Installation](#installation)
-3. [Usage](#usage)
-4. [Features](#features)
-5. [Contributing](#contributing)
+2. [Background](#background)
+3. [Installation](#installation)
+4. [Usage](#usage)
+5. [Features](#features)
 6. [License](#license)
 7. [Contact](#contact)
 
