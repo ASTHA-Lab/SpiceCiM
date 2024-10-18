@@ -36,10 +36,10 @@ Provide a step-by-step guide on how to install your project locally. For example
 
 ```bash
 # Clone the repository
-git clone https://github.com/username/project-name.git
+git clone https://github.com/ASTHA-Lab/SpiceCiM.git
 
 # Change the directory
-cd project-name
+cd SpiceCiM
 
 # Install dependencies (if applicable)
 npm install
