@@ -18,7 +18,17 @@ S. M. Mojahidul Ahsan, M. Sakib Shahriar, Mrittika Chowdhury, Tanvir Hossain, Md
 
 ## Overview
 
-Provide a more detailed explanation of your project here. Mention the problem your project solves or the functionality it provides. You can also list any technologies, libraries, or frameworks used in the project.
+This project introduces **SpiceCiM**, a SPICE-based design and optimization framework tailored for analog compute-in-memory (ACIM) architectures using emerging non-volatile memory (eNVM) technologies. ACIM architectures are essential for accelerating deep neural network (DNN) models, especially in edge AI applications where power, performance, and area efficiency are paramount. The framework provides a solution to challenges in simulating large-scale ACIM architectures, which are often sensitive to process, voltage, and temperature variations and analog noise.
+
+### Key Features of the Framework:
+
+1. **Automated SPICE Netlist Generation**: It generates SPICE netlists for DNN models, simplifying hardware simulation.
+2. **DNN Weights Mapping**: Accurately maps DNN weights to eNVM conductance values, ensuring faithful hardware-level inference simulations.
+3. **Optimized Simulation Runtime**: By introducing a seed crossbar array methodology, it reduces simulation time while maintaining accuracy, achieving up to 35x speedup over traditional methods.
+4. **Comprehensive Integration**: It allows system-level simulations through integration with architectural simulators like GEM5, enabling comprehensive analysis of latency, power, and inference accuracy.
+
+This framework pushes the boundary of analog in-memory computing research by enabling accurate, large-scale SPICE simulations for DNN inference, making it a powerful tool for researchers and designers developing the next generation of energy-efficient AI hardware.
+
 
 ## Installation
 
