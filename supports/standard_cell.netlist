@@ -1,0 +1,69 @@
+// Cell name: rram_cell_1T1R_180N_STD
+// View name: schematic
+subckt rram_cell_1T1R_180N_STD BL SL WL
+    NM0 (net1 WL SL 0) nmos1 w=(2u) l=180n as=1.2p ad=1.2p ps=5.2u pd=5.2u \
+        m=(1)*(1)
+    I0 (BL net1) sky130_fd_pr_reram__reram_cell area_ox=1.024e-13 \
+        Tox=5e-09 Tfilament_max=4.9e-09 Tfilament_min=3.3e-09 \
+        Tfilament_0=3.3e-09 Eact_generation=1.501 Eact_recombination=1.5 \
+        I_k1=6.14e-05 Tfilament_ref=4.7249e-09 V_ref=0.43 velocity_k1=150 \
+        gamma_k0=16.5 gamma_k1=-1.25 Temperature_0=300 \
+        C_thermal=3.1825e-16 tau_thermal=2.3e-10 t_step=1e-09
+ends rram_cell_1T1R_180N_STD
+// End of subcircuit definition.
+
+// Cell name: INVX1
+// View name: schematic
+subckt INVX1 A VDD VSS Y
+    NM0 (Y A VSS VSS) nmos1 w=(2u) l=180n as=1.2p ad=1.2p ps=5.2u pd=5.2u \
+        m=(1)*(1)
+    PM0 (Y A VDD VDD) pmos1 w=(2u) l=180n as=1.2p ad=1.2p ps=5.2u pd=5.2u \
+        m=(1)*(1)
+ends INVX1
+// End of subcircuit definition.
+
+// Cell name: AND2_X1
+// View name: schematic
+subckt AND2_X1 A B VDD VSS Y
+    PM2 (net1 A VDD VDD) pmos1 w=(2u) l=180n as=1.2p ad=1.2p ps=5.2u \
+        pd=5.2u m=(1)*(1)
+    PM1 (net1 B VDD VDD) pmos1 w=(2u) l=180n as=1.2p ad=1.2p ps=5.2u \
+        pd=5.2u m=(1)*(1)
+    NM1 (net2 B VSS VSS) nmos1 w=(2u) l=180n as=1.2p ad=1.2p ps=5.2u \
+        pd=5.2u m=(1)*(1)
+    NM0 (net1 A net2 VSS) nmos1 w=(2u) l=180n as=1.2p ad=1.2p ps=5.2u \
+        pd=5.2u m=(1)*(1)
+    I0 (net1 VDD VSS Y) INVX1
+ends AND2_X1
+// End of subcircuit definition.
+
+// Cell name: OR2_X1
+// View name: schematic
+subckt OR2_X1 A B VDD VSS Y
+    PM2 (net3 A VDD VDD) pmos1 w=(2u) l=180n as=1.2p ad=600f ps=5.2u \
+        pd=2.6u m=(1)*(2)
+    PM1 (net1 B net3 VDD) pmos1 w=(2u) l=180n as=1.2p ad=600f ps=5.2u \
+        pd=2.6u m=(1)*(2)
+    NM1 (net1 B VSS VSS) nmos1 w=(2u) l=180n as=1.2p ad=1.2p ps=5.2u \
+        pd=5.2u m=(1)*(1)
+    NM0 (net1 A VSS VSS) nmos1 w=(2u) l=180n as=1.2p ad=1.2p ps=5.2u \
+        pd=5.2u m=(1)*(1)
+    I0 (net1 VDD VSS Y) INVX1
+ends OR2_X1
+// End of subcircuit definition.
+
+// Cell name: BL_DRIVER
+// View name: schematic
+subckt BL_DRIVER PGMEN RDEN VDD VD_PGM VD_READ VSS OUT
+    NM2 (VD_READ net1 OUT VSS) nmos1 w=(2u) l=180n as=1.2p ad=1.2p ps=5.2u \
+        pd=5.2u m=(1)*(1)
+    NM0 (VD_PGM net2 OUT VSS) nmos1 w=(2u) l=180n as=1.2p ad=1.2p ps=5.2u \
+        pd=5.2u m=(1)*(1)
+    PM2 (OUT net2 VD_READ VDD) pmos1 w=(2u) l=180n as=1.2p ad=1.2p ps=5.2u \
+        pd=5.2u m=(1)*(1)
+    PM0 (OUT net1 VD_PGM VDD) pmos1 w=(2u) l=180n as=1.2p ad=1.2p ps=5.2u \
+        pd=5.2u m=(1)*(1)
+    I0 (net2 VDD VSS net1) INVX1
+    I1 (PGMEN RDEN VDD VSS net2) AND2_X1
+ends BL_DRIVER
+// End of subcircuit definition.
