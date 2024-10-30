@@ -13,7 +13,7 @@ import subprocess
 import shlex
 import csv
 import re
-from rapsody import *
+from supports.rapsody import *
 import sys
 import configparser
 
