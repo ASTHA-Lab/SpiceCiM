@@ -33,6 +33,10 @@ This framework pushes the boundary of analog in-memory computing research by ena
 
 ## Installation
 
+Requirements
+Python 3.x
+Cadence SPECTRE simulator
+
 Step-by-step guide on how to install and run **SpiceCiM** locally:
 ```bash
 # Clone the repository
@@ -44,12 +48,39 @@ cd SpiceCiM
 # Install dependencies (if applicable)
 npm install
 ```
+
 ## Usage
-### Designing Neural Network:
+Repository Structure
+spiceSim.py: Core script for creating the neural network, training it, generating the design, mapping weights, running simulations, and performing inference.
+data_collect.py: Extracts waveform data and tabulates it.
+checkInfer.py: Validates the inference results.
+Getting Started
+Running Instructions
+Edit Configuration
+Open config.ini and adjust the settings according to your requirements.
 
-### Design Generation:
+Load Cadence SPECTRE and Navigate to the Script Directory
+Make sure Cadence SPECTRE is loaded and navigate to the directory containing the scripts.
 
-### Setting-up Simulation Environment:
+Run spiceSim.py
+Execute this script to:
+
+Create and train the neural network model.
+Retrieve the trained weight matrix and hardware requirements.
+Generate design specifications.
+Map weights to the model.
+Execute simulation and inference
+```bash
+python spiceSim.py
+```
+This script collects data from the waveform output and organizes it into a tabular format.
+```bash
+python data_collect.py
+```
+Run this script to check and validate the inference results.
+```bash
+python checkInfer.py
+```
 
 
 
