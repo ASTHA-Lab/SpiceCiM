@@ -62,7 +62,7 @@ Open config.ini and adjust the settings according to your requirements.
 Load Cadence SPECTRE and Navigate to the Script Directory
 Make sure Cadence SPECTRE is loaded and navigate to the directory containing the scripts.
 
-Run spiceSim.py
+Run spicecim.py
 Execute this script to:
 
 Create and train the neural network model.
