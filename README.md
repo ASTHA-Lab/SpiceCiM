@@ -71,7 +71,7 @@ Generate design specifications.
 Map weights to the model.
 Execute simulation and inference
 ```bash
-python spiceSim.py
+python spicecim.py
 ```
 This script collects data from the waveform output and organizes it into a tabular format.
 ```bash
