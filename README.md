@@ -49,7 +49,7 @@ cd SpiceCiM
 chmod +x run.sh
 
 # Change the config.ini file if necessary
-# Make sure to source appropriate Simulator License! 
+# Make sure to source appropriate Simulator License!  Current version only supports Cadence Spectre. Support for Hspice and Opensource Ngspice are coming soon!
 
 # Run the the tool:
 ./run.sh
