@@ -57,7 +57,8 @@ chmod +x run.sh
 
 ## Usage
 Repository Structure
-spiceSim.py: Core script for creating the neural network, training it, generating the design, mapping weights, running simulations, and performing inference.
+run.sh: Bash wrapper to run the SpiceCim.py after installing all the dependencies.
+SpiceCim.py: Core script for creating the neural network, training it, generating the design, mapping weights, running simulations, and performing inference.
 data_collect.py: Extracts waveform data and tabulates it.
 checkInfer.py: Validates the inference results.
 Getting Started
@@ -79,6 +80,11 @@ Execute simulation and inference
 ```bash
 python spicecim.py
 ```
+Or just simply execute:
+```bash
+./run.sh
+```
+
 This script collects data from the waveform output and organizes it into a tabular format.
 ```bash
 python data_collect.py
@@ -91,7 +97,8 @@ python checkInfer.py
 
 
 ## Features
-
+Will be updated soon!
 ## License
 
 ## Contact
+ahsan@ku.edu
