@@ -45,8 +45,14 @@ git clone https://github.com/ASTHA-Lab/SpiceCiM.git
 # Change the directory
 cd SpiceCiM
 
-# Install dependencies (if applicable)
-npm install
+# Make run file executable:
+chmod +x run.sh
+
+# Change the config. ini file if necessary
+
+# Run the the tool:
+./run.sh
+
 ```
 
 ## Usage
