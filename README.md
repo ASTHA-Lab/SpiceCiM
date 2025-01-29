@@ -49,6 +49,7 @@ cd SpiceCiM
 chmod +x run.sh
 
 # Change the config.ini file if necessary
+# Make sure to source appropriate Simulator License! 
 
 # Run the the tool:
 ./run.sh
@@ -78,7 +79,7 @@ Generate design specifications.
 Map weights to the model.
 Execute simulation and inference
 ```bash
-python spicecim.py
+python SpiceCim.py
 ```
 Or just simply execute:
 ```bash
