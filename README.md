@@ -29,7 +29,14 @@ This project introduces **SpiceCiM**, a SPICE-based design and optimization fram
 
 This framework pushes the boundary of analog in-memory computing research by enabling accurate, large-scale SPICE simulations for DNN inference, making it a powerful tool for researchers and designers developing the next generation of energy-efficient AI hardware.
 
-## Background
+## Limitations:
+1. Current version only supports Cadence Spectre. Support for Hspice and Opensource Ngspice are coming soon!
+2. Current version only supports MLP and SLP network. Support for CNN is in progress!
+3. Current verison only supports SkyWater 130nm RRAM model. Support for MRAM is coming soon!
+
+# Run the the tool:
+./run.sh
+
 
 ## Installation
 
