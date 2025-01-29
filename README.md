@@ -48,7 +48,7 @@ cd SpiceCiM
 # Make run file executable:
 chmod +x run.sh
 
-# Change the config. ini file if necessary
+# Change the config.ini file if necessary
 
 # Run the the tool:
 ./run.sh
