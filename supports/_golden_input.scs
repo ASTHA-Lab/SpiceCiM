@@ -1,6 +1,6 @@
 simulator lang=spectre
 global 0
-include "/scratch/s550a945/proj/PDK/GPDK/gpdk180_v3.3/models/spectre/gpdk.scs" section=NN
+include "<transistor_mod>" section=NN
 include "<dev_mod>"
 include "top_netlist.scs"
 
