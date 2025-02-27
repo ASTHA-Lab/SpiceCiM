@@ -17,7 +17,7 @@ from supports.rapsody import *
 import sys
 import configparser
 
-
+#os.makedirs('tmp')
 
 # Load configuration from config.ini
 config = configparser.ConfigParser()
@@ -62,8 +62,10 @@ vmax = float(config['INFERENCE']['vmax'])
 def setup_distribution_directory(base_dir):
     if os.path.exists(base_dir):
         shutil.rmtree(base_dir)
+        #shutil.rmtree('tmp')
     os.makedirs(base_dir)
 setup_distribution_directory(base_dir)
+setup_distribution_directory('tmp')
 
 def main():
     #alpha = Ik1/Vref
@@ -76,17 +78,19 @@ def main():
     model, layer_weights, biases, hardware_reqs = create_and_train_ann_model(qbit, num_epoch, inputlen_sqrt, outputlen, num_hidden_layer, 16)
     binary_image, inf_image = load_and_process_to_bin_img(image_path, size, vmax, model)
     
-    total_rows, sim_time = generate_pwl_sources('img_to_voltage_data.csv', PW, Trise, Tfall, synaptic_array_size[0])
+    total_rows, sim_time = generate_pwl_sources('./tmp/img_to_voltage_data.csv', PW, Trise, Tfall, synaptic_array_size[0])
     
     stdcell_file_path = config['PATHS']['stdcell_file_path']
     top_netlist = generate_subarray(synaptic_array_size[0], synaptic_array_size[1], stdcell_file_path)
-    with open("top_netlist.scs", 'w') as file:
+    with open("./tmp/top_netlist.scs", 'w') as file:
         file.write(top_netlist)
     
     for layer_idx, weights in layer_weights.items():
         distribute_weights({f"{layer_idx}": weights}, {f"{layer_idx}": hardware_reqs[f"{layer_idx}"]})
     
-    baseline_file_path = config['PATHS']['baseline_file_path']
+    baseline_file_path = config['PATHS']['envm_model_path']
+    
+
     
     base_dir = "weights_distribution"
     
@@ -105,18 +109,39 @@ def main():
                     weight_mapping(Tpos, Tneg, baseline_file_path, res_val, cap_val)
                     infile_noext = os.path.splitext(full_path)[0]
                     
-                    siminput_path_pos = os.path.join(os.getcwd(), "input_pos.scs")
-                    siminput_path_neg = os.path.join(os.getcwd(), "input_neg.scs")
+                    siminput_path_pos = os.path.join(os.getcwd(), "./tmp/input_pos.scs")
+                    siminput_path_neg = os.path.join(os.getcwd(), "./tmp/input_neg.scs")
                     
-                    if int(layer_idx.replace('Layer', '')) == 1:
+                    '''if int(layer_idx.replace('Layer', '')) == 1:
                         run_string = setup_simulation_args(siminput_path_pos, infile_noext, '_pos')
                         map_primary_input(siminput_path_pos, siminput_path_neg, full_path, sim_time)
                         run_sim(run_string, infile_noext)
                     else:
                         run_string = setup_simulation_args(siminput_path_pos, infile_noext, '_pos')
                         map_secondary_input(siminput_path_pos, siminput_path_neg, full_path, sim_time)
+                        run_sim(run_string, infile_noext)'''
+                        
+                    if int(layer_idx.replace('Layer', '')) == 1:
+                        print(f"Layer-{layer_idx.replace('Layer', '')} Simulation: Positive")
+                        run_string=setup_simulation_args(siminput_path_pos, infile_noext, '_pos')
+                        map_primary_input(siminput_path_pos, siminput_path_neg, full_path, sim_time)
+                        run_sim(run_string, infile_noext)
+
+                        print(f"Layer-{layer_idx.replace('Layer', '')} Simulation: Negative")
+                        run_string=setup_simulation_args(siminput_path_neg, infile_noext, '_neg')
+                        map_primary_input(siminput_path_pos, siminput_path_neg, full_path, sim_time)
+                        run_sim(run_string, infile_noext)
+                        #collect_data(infile_noext, cyc_time, total_rows)
+                    else:
+                        print(f"Layer-{layer_idx.replace('Layer', '')} Simulation: Positive")
+                        run_string=setup_simulation_args(siminput_path_pos, infile_noext, '_pos')
+                        map_secondary_input(siminput_path_pos, siminput_path_neg, full_path, sim_time)
+                        run_sim(run_string, infile_noext)
+
+                        print(f"Layer-{layer_idx.replace('Layer', '')} Simulation: Negative")
+                        run_string=setup_simulation_args(siminput_path_neg, infile_noext, '_neg')
+                        map_secondary_input(siminput_path_pos, siminput_path_neg, full_path, sim_time)
                         run_sim(run_string, infile_noext)
 
 if __name__ == "__main__":
     main()
-
