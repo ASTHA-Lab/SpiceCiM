@@ -40,13 +40,14 @@ alpha = Ik1 / Vref
 # Paths
 golden_input_path = config['PATHS']['golden_input_path']
 base_dir = config['PATHS']['base_dir']
-
+transistor_model =config['PATHS']['transistor_model_path']
 
 # Wire Parasitics
 res_val = float(config['HARDWARE']['res_val'])
 cap_val = float(config['HARDWARE']['cap_val'])
 
 # Simulation Parameters
+process_corner = config['SIMULATION']['process_corner']
 PW = float(config['SIMULATION']['PW'])
 Trise = float(config['SIMULATION']['Trise'])
 Tfall = float(config['SIMULATION']['Tfall'])
@@ -279,11 +280,11 @@ def weight_mapping(T_pos, T_neg, baseline_file_path, res_val, cap_val):
             device_model_neg_content += device_model_content_neg
 
     # Write the device_model_pos_content to the device_model_pos.scs file
-    with open("device_model_pos.scs", 'w') as device_model_pos_file:
+    with open("./tmp/device_model_pos.scs", 'w') as device_model_pos_file:
         device_model_pos_file.write(device_model_pos_content)
         
     # Write the device_model_neg_content to the device_model_neg.scs file
-    with open("device_model_neg.scs", 'w') as device_model_neg_file:
+    with open("./tmp/device_model_neg.scs", 'w') as device_model_neg_file:
         device_model_neg_file.write(device_model_neg_content)
 
 
@@ -357,7 +358,7 @@ def load_and_process_to_bin_img(image_path, size, vmax,model):
     # Convert the dictionary to a DataFrame
     df = pd.DataFrame.from_dict(voltage_data, orient='index')
     # Save the DataFrame to a CSV file
-    df.to_csv('img_to_voltage_data.csv', header=True, index_label='image_name')
+    df.to_csv('./tmp/img_to_voltage_data.csv', header=True, index_label='image_name')
 
     return binary_images, 'Processing complete and binary data saved to CSV.'
 
@@ -392,7 +393,7 @@ def load_and_process_test_image(image_path, size, vmax):
     # Convert the dictionary to a DataFrame
     df = pd.DataFrame.from_dict(voltage_data, orient='index')
     # Save the DataFrame to a CSV file
-    df.to_csv('img_to_voltage_data.csv', header=True, index_label='image_name')
+    df.to_csv('./tmp/img_to_voltage_data.csv', header=True, index_label='image_name')
 
     return 'Processing complete and data saved to CSV.'
 
@@ -421,7 +422,7 @@ def map_primary_input(input_path_pos, input_path_neg, full_path, sim_time):
     end_line = start_line + synaptic_array_size[0]
 
     # Read the necessary source lines from _pwl_sources.scs
-    with open('_pwl_sources.scs', 'r') as file:
+    with open('./tmp/_pwl_sources.scs', 'r') as file:
         lines = file.readlines()
     selected_sources = "".join(lines[start_line:end_line])
     
@@ -432,14 +433,16 @@ def map_primary_input(input_path_pos, input_path_neg, full_path, sim_time):
         content = file.read()
     content = content.replace('<sim_time>', str(sim_time))
     content = content.replace('<input_source>', selected_sources)
-    content = content.replace('<dev_mod>', 'device_model_pos.scs')
+    content = content.replace('<dev_mod>', './tmp/device_model_pos.scs')
+    content = content.replace('<transistor_mod>', transistor_model)
+    content = content.replace('<pcorner>', process_corner)
     
     # Write the modified content to the new input.scs file
     with open(input_path_pos, 'w') as file:
         file.write(content)
         
         
-    content = content.replace('device_model_pos.scs', 'device_model_neg.scs')
+    content = content.replace('./tmp/device_model_pos.scs', './tmp/device_model_neg.scs')
     with open(input_path_neg, 'w') as file:
         file.write(content)
 
@@ -470,7 +473,9 @@ def map_secondary_input(input_path_pos, input_path_neg, full_path, sim_time):
         content = file.read()
     content = content.replace('<sim_time>', str(sim_time))
     content = content.replace('<input_source>', selected_sources)
-    content = content.replace('<dev_mod>', 'device_model_pos.scs')
+    content = content.replace('<dev_mod>', './tmp/device_model_pos.scs')
+    content = content.replace('<transistor_mod>', transistor_model)
+    content = content.replace('<pcorner>', process_corner)
     
 
     # Write the modified content to the new input.scs file
@@ -478,7 +483,7 @@ def map_secondary_input(input_path_pos, input_path_neg, full_path, sim_time):
         file.write(content)
         
         
-    content = content.replace('device_model_pos.scs', 'device_model_neg.scs')
+    content = content.replace('./tmp/device_model_pos.scs', './tmp/device_model_neg.scs')
     with open(input_path_neg, 'w') as file:
         file.write(content)
 
@@ -516,7 +521,7 @@ def generate_pwl_sources(csv_path, pulse_width, trise, tfall, scol):
         node_counter += 1  # Increment the node counter for the next source
 
     # Write to file
-    with open('_pwl_sources.scs', 'w') as file:
+    with open('./tmp/_pwl_sources.scs', 'w') as file:
         file.write(content)
     total_rows = df.shape[0]
     return total_rows, time_start
