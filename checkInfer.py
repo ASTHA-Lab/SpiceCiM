@@ -5,10 +5,10 @@ def read(path):
         return f.readlines()
 
 
-filePath="/mnt/e/scratch/2/output350.csv"
+filePath="./tmp/output.csv"
 fileDataList=list(read(filePath))
 unitDiv=1e-6
-refValueFile="/mnt/e/scratch/2/weights_distribution_NN/tensorOut.csv"
+refValueFile="./tmp/tensorOut.csv"
 refFileData=list(read(refValueFile))
 
 headerStr=fileDataList.pop(0)
@@ -36,7 +36,7 @@ for line in fileDataList:
         count0+=1
     dataDict[dataDictKey][sign]=dict0
 
-with open("result.json", 'w') as fout:
+with open("./tmp/result.json", 'w') as fout:
     json_dumps_str = json.dumps(dataDict, indent=4)
     print(json_dumps_str, file=fout)
 
@@ -68,7 +68,7 @@ for array in dataDict:
                 count1+=1
 
 dataDict2={}
-dataWrite=open("finalInferenceCheck350.csv", "w")
+dataWrite=open("InferenceCheck_Output.csv", "w")
 dataWrite.write("Original,Simulation,Check\n")
 count2=0
 passCount=0
@@ -98,10 +98,10 @@ for process in dataDict1:
 dataWrite.write("\n\nPASS "+str(passCount)+"\nFAIL "+str(failCount))
 dataWrite.close()
 
-with open("result2.json", 'w') as fout:
+with open("./tmp/result2.json", 'w') as fout:
     json_dumps_str = json.dumps(dataDict1, indent=4)
     print(json_dumps_str, file=fout)
             
-with open("result3.json", 'w') as fout:
+with open("./tmp/result3.json", 'w') as fout:
     json_dumps_str = json.dumps(dataDict2, indent=4)
     print(json_dumps_str, file=fout)
