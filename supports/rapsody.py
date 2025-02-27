@@ -48,6 +48,9 @@ cap_val = float(config['HARDWARE']['cap_val'])
 
 # Simulation Parameters
 process_corner = config['SIMULATION']['process_corner']
+vdd_val = config['SIMULATION']['VDD']
+vss_val = config['SIMULATION']['VSS']
+temp_val = config['SIMULATION']['Temperature']
 PW = float(config['SIMULATION']['PW'])
 Trise = float(config['SIMULATION']['Trise'])
 Tfall = float(config['SIMULATION']['Tfall'])
@@ -320,6 +323,7 @@ def load_and_process_to_bin_img(image_path, size, vmax,model):
     binary_images = {}
     
     file_names = sorted(os.listdir(image_path), key=natural_sort_key)
+    tensorOut=open("./tmp/tensorOut.csv", "w")
 
     # Iterate over every file in the directory
     for file_name in file_names:
@@ -354,6 +358,7 @@ def load_and_process_to_bin_img(image_path, size, vmax,model):
                 prediction = model.predict(inference_ready_image)
                 predicted_class = np.argmax(prediction, axis=1)
                 print(f"Prediction for {file_name}: {predicted_class}")
+                print(f"Prediction for {file_name},{predicted_class}", file=tensorOut)
 
     # Convert the dictionary to a DataFrame
     df = pd.DataFrame.from_dict(voltage_data, orient='index')
@@ -426,6 +431,8 @@ def map_primary_input(input_path_pos, input_path_neg, full_path, sim_time):
         lines = file.readlines()
     selected_sources = "".join(lines[start_line:end_line])
     
+    csnames = " ".join([f"IPRB{i}:in" for i in range(synaptic_array_size[1])])
+    
     #print(selected_sources, "\n\n")
 
     # Read the golden input template and replace the placeholder with the selected sources
@@ -436,6 +443,10 @@ def map_primary_input(input_path_pos, input_path_neg, full_path, sim_time):
     content = content.replace('<dev_mod>', './tmp/device_model_pos.scs')
     content = content.replace('<transistor_mod>', transistor_model)
     content = content.replace('<pcorner>', process_corner)
+    content = content.replace('<vdd>', vdd_val)
+    content = content.replace('<vss>', vss_val)
+    content = content.replace('<temp>', temp_val)
+    content = content.replace('<csnames>', csnames)
     
     # Write the modified content to the new input.scs file
     with open(input_path_pos, 'w') as file:
@@ -467,6 +478,8 @@ def map_secondary_input(input_path_pos, input_path_neg, full_path, sim_time):
     selected_sources = "".join(lines[start_line:end_line])
     
     #print(selected_sources, "\n\n")
+    
+    csnames = " ".join([f"IPRB{i}:in" for i in range(synaptic_array_size[1])])
 
     # Read the golden input template and replace the placeholder with the selected sources
     with open(golden_input_path, 'r') as file:
@@ -476,6 +489,10 @@ def map_secondary_input(input_path_pos, input_path_neg, full_path, sim_time):
     content = content.replace('<dev_mod>', './tmp/device_model_pos.scs')
     content = content.replace('<transistor_mod>', transistor_model)
     content = content.replace('<pcorner>', process_corner)
+    content = content.replace('<vdd>', vdd_val)
+    content = content.replace('<vss>', vss_val)
+    content = content.replace('<temp>', temp_val)
+    content = content.replace('<csnames>', csnames)
     
 
     # Write the modified content to the new input.scs file
