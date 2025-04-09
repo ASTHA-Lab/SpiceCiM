@@ -3,7 +3,33 @@
 ## A SPICE-based Design and Optimization Framework for eNVM-based Analog In-memory Computing
 
 **Cite our work**:
-S. M. Mojahidul Ahsan, M. Sakib Shahriar, Mrittika Chowdhury, Tanvir Hossain, Md. Sakib Hasan, and Tamzidul Hoque. 2024. *Accurate, Yet Scalable: A SPICE-based Design and Optimization Framework for eNVM-based Analog In-memory Computing*. In IEEE/ACM International Conference on Computer-Aided Design (ICCAD '24), October 27–31, 2024, New York, NY, USA. ACM, New York, NY, USA, 9 pages. [https://doi.org/10.1145/3676536.3676827](https://doi.org/10.1145/3676536.3676827)
+@inproceedings{10.1145/3676536.3676827,
+author = {Ahsan, S M Mojahidul and Shahriar, Muhammad Sakib and Chowdhury, Mrittika and Hossain, Tanvir and Hasan, Md Sakib and Hoque, Tamzidul},
+title = {Accurate, Yet Scalable: A SPICE-based Design and Optimization Framework for eNVM based Analog In-memory Computing},
+year = {2025},
+isbn = {9798400710773},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3676536.3676827},
+doi = {10.1145/3676536.3676827},
+abstract = {This paper introduces a scalable SPICE-based tool infrastructure designed to optimize analog compute-in-memory (ACIM) architectures utilizing emerging non-volatile resistive memory (eNVM) technologies. The inherent efficiency of analog eNVM crossbar arrays in performing matrix-vector multiplications significantly enhances the power, performance, and area efficiency of edge AI devices and other applications. Our framework addresses the challenges of accurately simulating ACIM architectures, which are highly susceptible to variations in process, voltage, temperature, and analog noise. The framework uses SPICE for accurate analog and mixed-signal circuit simulation. It automates the generation of SPICE-level ACIM designs for deep neural networks. Additionally, it speeds up the simulation runtime by up to 35\texttimes{} for large DNN models while maintaining the same SPICE-level accuracy. Moreover, it ensures simulation convergence for large netlists, facilitating SPICE simulation of large-scale eNVM crossbars that were previously impractical. We demonstrated that our framework is capable of simulating inference using netlists for MLPs with over 800,000 parameters trained on the MNIST dataset within acceptable runtime, where contemporary SPICE simulators do not even converge. We validated the simulation results in terms of inference accuracy, which shows less than a 3.8\% accuracy drop compared to software-based inference results. Lastly, we demonstrated the integration of our framework with an architectural simulator, facilitating comprehensive system-level simulation.},
+booktitle = {Proceedings of the 43rd IEEE/ACM International Conference on Computer-Aided Design},
+articleno = {191},
+numpages = {9},
+keywords = {analog in-memory-computing, eNVM, SPICE, design automation},
+location = {Newark Liberty International Airport Marriott, New York, NY, USA},
+series = {ICCAD '24}
+}
+
+
+## 🚀 Current Version Updates (vX.X.X)
+
+- ✅ **SLP Simulation Support**  
+  The current version includes support for **SLP simulation**.
+
+- 🐞 **MLP Simulation - Known Issues**  
+  MLP simulation may contain bugs. We're actively working on resolving these in upcoming patches.
+
 
 
 ## Table of Contents
