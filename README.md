@@ -31,6 +31,12 @@ series = {ICCAD '24}
 - 🐞 **MLP Simulation - Known Issues**  
   MLP simulation may contain bugs. We're actively working on resolving these in upcoming versions.
 
+## ⚠️ Other Known Issues
+
+- ReRAM device non-ideality/non-linearity are not addressed in current version (currently in development).
+- Quantization Aware Training is implemented but yet to be tested for bug fixes.
+- Device variation and stochastic effects in analog crossbars are not modeled in this release.
+
 
 
 ## Table of Contents
