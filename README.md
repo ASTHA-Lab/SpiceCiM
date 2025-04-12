@@ -33,9 +33,9 @@ series = {ICCAD '24}
 
 - ⚠️ **Other Known Issues**
 
-- ReRAM device non-ideality/non-linearity are not addressed in current version (currently in development).
-- Quantization Aware Training is implemented but yet to be tested for bug fixes.
-- Device variation and stochastic effects in analog crossbars are not modeled in this release.
+1. ReRAM device non-ideality/non-linearity are not addressed in current version (currently in development).
+2. Quantization Aware Training is implemented but yet to be tested for bug fixes.
+3. Device variation and stochastic effects in analog crossbars are not modeled in this release.
 
 
 
