@@ -699,7 +699,7 @@ def generate_pwl_sources_ll(csv_path, pulse_width, trise, tfall, scol):
 
 
 def setup_simulation_args(siminput_path, infile_noext, suffix):
-    spectre_args = ["aps -64",
+    spectre_args = ["spectre -64",
                     siminput_path,
                     "+mt=8",
                     "+escchars",
