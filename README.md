@@ -127,15 +127,6 @@ Or just simply execute:
 ./run.sh
 ```
 
-This script collects data from the waveform output and organizes it into a tabular format.
-```bash
-python data_collect.py
-```
-Run this script to check and validate the inference results.
-```bash
-python checkInfer.py
-```
-
 
 ## License
 MIT License
