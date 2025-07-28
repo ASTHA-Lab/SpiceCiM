@@ -14,7 +14,7 @@ import subprocess
 import shlex
 import csv
 import re
-from utils.rapsody import *
+from utils.spcimcore import *
 import sys
 import configparser
 from utils.data_collect import *
