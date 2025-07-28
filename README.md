@@ -29,7 +29,7 @@ series = {ICCAD '24}
   The current version includes support for **SLP simulation**.
 
 - 🐞 **MLP Simulation - Known Issues**  
-  MLP simulation may contain bugs. We're actively working on resolving these in upcoming versions.
+  MLP Simulation results needs more validation for Accuracy.
 
 - ⚠️ **Other Known Issues**
 
