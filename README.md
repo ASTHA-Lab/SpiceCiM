@@ -29,7 +29,7 @@ series = {ICCAD '24}
   The current version includes support for **SLP simulation**.
 
 - 🐞 **MLP Simulation - Known Issues**  
-  MLP Simulation results needs more validation for Accuracy.
+  MLP Simulation results needs more validation for NN accuracy for different datasets.
 
 - ⚠️ **Other Known Issues**
 
