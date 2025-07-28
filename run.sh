@@ -12,5 +12,3 @@ pip3 install numpy tensorflow scipy pillow pandas scikit-image configparser
 
 # Run the raptor script
 python3 SpiceCim.py
-python3 data_collect.py
-python3 checkInfer.py
