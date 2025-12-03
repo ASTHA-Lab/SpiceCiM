@@ -61,6 +61,8 @@ image_path = config['INFERENCE']['image_path']
 size = tuple(map(int, config['INFERENCE']['size'].split(',')))
 vmax = float(config['INFERENCE']['vmax'])
 
+quantization = config['TRAINING']['quantization']
+
 def setup_distribution_directory(base_dir):
     if os.path.exists(base_dir):
         shutil.rmtree(base_dir)
@@ -181,6 +183,49 @@ def compute_hardware_requirements(weights_shape, sa_size, pe_size, tile_size):
         'tiles': {'total': num_tiles, 'height': h_tile, 'width': w_tile}
     }
 
+from skimage.filters import threshold_otsu
+import numpy as np
+
+def binarize_training_data(X_train, method='per_image', threshold=None):
+    """
+    Binarize training data X_train into 0/1 values.
+
+    Args:
+        X_train (np.ndarray):
+            Array of shape (n_samples, height, width), with float values in [0,1].
+        method (str): 
+            'global'    – one Otsu threshold over X_train.flatten();
+            'per_image' – Otsu threshold per sample;
+            'fixed'     – use the provided `threshold`.
+        threshold (float, optional):
+            Numeric threshold in [0,1] for method='fixed'.
+
+    Returns:
+        Xb (np.ndarray):
+            Binarized array of same shape as X_train, dtype float32 (values 0 or 1).
+    """
+    if method not in ('global', 'per_image', 'fixed'):
+        raise ValueError("method must be 'global', 'per_image' or 'fixed'")
+
+    # per-image binarization
+    if method == 'per_image':
+        Xb = np.zeros_like(X_train, dtype=np.float32)
+        for i, img in enumerate(X_train):
+            thr = threshold_otsu(img)
+            Xb[i] = (img > thr).astype(np.float32)
+        return Xb
+
+    # global Otsu
+    if method == 'global':
+        flat = X_train.ravel()
+        thr = threshold_otsu(flat)
+        return (X_train > thr).astype(np.float32)
+
+    # fixed threshold
+    if method == 'fixed':
+        if threshold is None:
+            raise ValueError("You must provide a numeric threshold for method='fixed'")
+        return (X_train > threshold).astype(np.float32)
 
 
 def create_and_train_ann_model(pqbit, nepoch, xsize, ntensor_out, hlayer_sizes):
@@ -193,6 +238,7 @@ def create_and_train_ann_model(pqbit, nepoch, xsize, ntensor_out, hlayer_sizes):
 
     # Load and preprocess the dataset
     (x_train, y_train), _ = mnist.load_data()
+    x_train = binarize_training_data(x_train, method='per_image')
     x_train = resize_images(x_train, (xsize, xsize))
     x_train = x_train.reshape(-1, xsize, xsize).astype('float32') / 255
 
@@ -202,8 +248,8 @@ def create_and_train_ann_model(pqbit, nepoch, xsize, ntensor_out, hlayer_sizes):
     model.add(Flatten())
     if hlayer_sizes:
         for size in hlayer_sizes:
-            model.add(Dense(size, activation='relu'))
-    model.add(Dense(ntensor_out, activation='softmax'))
+            model.add(Dense(size, activation='relu', use_bias=False))
+    model.add(Dense(ntensor_out, activation='softmax', use_bias=False))
 
     model.compile(
         optimizer='adam',
@@ -217,19 +263,34 @@ def create_and_train_ann_model(pqbit, nepoch, xsize, ntensor_out, hlayer_sizes):
     layer_biases  = {}
     hardware_requirements = {}
     for i, layer in enumerate(model.layers):
-        if hasattr(layer, 'get_weights') and layer.get_weights():
-            W, b = layer.get_weights()
-            #if pqbit:
-            layer_weights[f"Layer{i}"] = quantize_weights_to_int(W, pqbit)
-            layer_biases [f"Layer{i}"] = quantize_weights_to_int(b, pqbit)
-            #else:
-                #layer_weights[f"Layer{i}"] = W
-                #layer_biases [f"Layer{i}"] = b 
+        if hasattr(layer, 'get_weights'):
+            weights = layer.get_weights()
+            if not weights:
+                # layer has no weights (e.g. Input or Flatten) → skip
+                continue
+
+            # unpack
+            W = weights[0]                              # the weight‐matrix
+            b = weights[1] if len(weights) > 1 else None  # bias if it exists
+
+            # quantize or store W
+            if quantization.strip() == 'ptq':
+                layer_weights[f"Layer{i}"] = quantize_weights_to_int(W, pqbit)
+                if b is not None:
+                    layer_biases[f"Layer{i}"] = quantize_weights_to_int(b, pqbit)
+            elif quantization.strip() == 'qat':
+                raise ValueError("QAT is not available…")
+            else:
+                layer_weights[f"Layer{i}"] = W
+                if b is not None:
+                    layer_biases[f"Layer{i}"] = b
+
+            # now that W is an array, W.shape works correctly
             hardware_requirements[f"Layer{i}"] = compute_hardware_requirements(
                 W.shape, synaptic_array_size, pe_size, tile_size
             )
 
-    return model, layer_weights, layer_biases, hardware_requirements, x_train
+    return model, layer_weights, hardware_requirements, x_train
 
 
 
@@ -699,7 +760,7 @@ def generate_pwl_sources_ll(csv_path, pulse_width, trise, tfall, scol):
 
 
 def setup_simulation_args(siminput_path, infile_noext, suffix):
-    spectre_args = ["spectre -64",
+    spectre_args = ["aps -64",
                     siminput_path,
                     "+mt=8",
                     "+escchars",
