@@ -8,6 +8,7 @@ import tensorflow as tf
 from tensorflow.keras.datasets import mnist
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Flatten, Dense
+from tensorflow.keras.layers import Input
 from scipy.ndimage import zoom
 from PIL import Image
 import pandas as pd
@@ -180,30 +181,50 @@ def compute_hardware_requirements(weights_shape, sa_size, pe_size, tile_size):
         'tiles': {'total': num_tiles, 'height': h_tile, 'width': w_tile}
     }
 
-def create_and_train_ann_model(pqbit, nepoch, xsize, ntensor_out, num_hlayer, *hlayer_sizes):
+
+
+def create_and_train_ann_model(pqbit, nepoch, xsize, ntensor_out, hlayer_sizes):
+    # --- ensure numeric types ---
+    xsize = int(xsize)
+    ntensor_out = int(ntensor_out)
+    print(hlayer_sizes)
+    hlayer_sizes = [int(s) for s in hlayer_sizes]
+
     # Load and preprocess the dataset
-    (x_train, y_train), (_, _) = mnist.load_data()
-    x_train_resized = resize_images(x_train, (xsize, xsize))
-    x_train_resized = x_train_resized.reshape(x_train_resized.shape[0], xsize, xsize).astype('float32') / 255
-    
-    # Define the model structure
-    hidden_layers = [Dense(size, activation='relu') for size in hlayer_sizes] if num_hlayer > 0 else []
-    model = Sequential([Flatten(input_shape=(xsize, xsize)), *hidden_layers, Dense(ntensor_out, activation='softmax')])
-    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-    model.fit(x_train_resized, y_train, epochs=nepoch, verbose=1)
-    
-    # Extract and quantize weights, compute hardware requirements
+    (x_train, y_train), _ = mnist.load_data()
+    x_train = resize_images(x_train, (xsize, xsize))
+    x_train = x_train.reshape(-1, xsize, xsize).astype('float32') / 255
+
+    # Build model with an explicit Input layer
+    model = Sequential()
+    model.add(Input(shape=(xsize, xsize)))
+    model.add(Flatten())
+    for size in hlayer_sizes:
+        model.add(Dense(size, activation='relu'))
+    model.add(Dense(ntensor_out, activation='softmax'))
+
+    model.compile(
+        optimizer='adam',
+        loss='sparse_categorical_crossentropy',
+        metrics=['accuracy']
+    )
+    model.fit(x_train, y_train, epochs=nepoch, verbose=1)
+
+    # Extract & quantize weights, compute hardware reqs
     layer_weights = {}
+    layer_biases  = {}
     hardware_requirements = {}
     for i, layer in enumerate(model.layers):
-        if hasattr(layer, 'get_weights') and len(layer.get_weights()) > 0:
-            weights,biases = layer.get_weights()
-            quantized_weights = quantize_weights_to_int(weights,pqbit)
-            quantized_biases= quantize_weights_to_int(biases,pqbit)
-            layer_weights[f"Layer{i}"] = quantized_weights
-            hardware_requirements[f"Layer{i}"] = compute_hardware_requirements(weights.shape, synaptic_array_size, pe_size, tile_size)
-    
-    return model, layer_weights, quantized_biases, hardware_requirements
+        if hasattr(layer, 'get_weights') and layer.get_weights():
+            W, b = layer.get_weights()
+            layer_weights[f"Layer{i}"] = quantize_weights_to_int(W, pqbit)
+            layer_biases [f"Layer{i}"] = quantize_weights_to_int(b, pqbit)
+            hardware_requirements[f"Layer{i}"] = compute_hardware_requirements(
+                W.shape, synaptic_array_size, pe_size, tile_size
+            )
+
+    return model, layer_weights, layer_biases, hardware_requirements
+
 
 
     
@@ -473,7 +494,7 @@ def map_secondary_input(input_path_pos, input_path_neg, full_path, sim_time):
     end_line = start_line + synaptic_array_size[0]
 
     # Read the necessary source lines from _pwl_sources.scs
-    with open('_PWL_source_HL.scs', 'r') as file:
+    with open('./tmp/_pwl_sources.scs', 'r') as file:
         lines = file.readlines()
     selected_sources = "".join(lines[start_line:end_line])
     
@@ -508,6 +529,7 @@ def map_secondary_input(input_path_pos, input_path_neg, full_path, sim_time):
 
 
 def generate_pwl_sources(csv_path, pulse_width, trise, tfall, scol):
+    print("Hello")
     # Load CSV file
     df = pd.read_csv(csv_path, index_col=0)  # Assuming the first column is image names and used as index
 
@@ -548,6 +570,7 @@ def generate_pwl_sources(csv_path, pulse_width, trise, tfall, scol):
 def setup_simulation_args(siminput_path, infile_noext, suffix):
     spectre_args = ["spectre -64",
                     siminput_path,
+                    "+mt=4",
                     "+escchars",
                     "=log ./" + infile_noext + f"{suffix}/psf/spectre.out",
                     "-format psfascii",
