@@ -14,11 +14,12 @@ import subprocess
 import shlex
 import csv
 import re
-from utils.spcimcore import *
+from utils.rapsody import *
 import sys
 import configparser
-from utils.data_collect import *
+#from utils.data_collect import *
 from utils.dp import *
+from utils.dc import *
 
 #os.makedirs('tmp')
 
@@ -109,7 +110,10 @@ def main():
     outputlen = int(config['TRAINING']['outputlen'])
     #hidden_layer_sizes = list(config['TRAINING']['hidden_layers'])
     raw = config['TRAINING']['hidden_layers']
-    qbit = int(config['TRAINING']['qbit'])
+    try:
+        qbit = int(config['TRAINING']['qbit'])
+    except:
+        qbit = 'None'
     try:
         hidden_layers = [int(size.strip()) for size in raw.split(',')]
         per_layer_ncount = hidden_layers + [outputlen]
@@ -126,7 +130,7 @@ def main():
 
     #print(per_layer_ncount)
     
-    model, layer_weights, biases, hardware_reqs, X_train = create_and_train_ann_model(qbit, num_epoch, inputlen_sqrt, outputlen, hidden_layers)
+    model, layer_weights, hardware_reqs, X_train = create_and_train_ann_model(qbit, num_epoch, inputlen_sqrt, outputlen, hidden_layers)
     binary_image, inf_image = load_and_process_images(image_path, size, vmax, model, binarize_images)
     print("Debug point 1")
     
@@ -149,7 +153,7 @@ def main():
     baseline_file_path = config['PATHS']['envm_model_path']
     
 
-    compute_mapping_ranges(layer_weights, biases, X_train, file_out="./tmp/mapping_ranges.json")
+    #compute_mapping_ranges(layer_weights, biases, X_train, file_out="./tmp/mapping_ranges.json")
     base_dir = "weights_distribution"
     
     for layer_idx in sorted(layer_weights.keys(), key=lambda x: int(x.replace('Layer', ''))):
@@ -175,6 +179,7 @@ def main():
                     siminput_path_pos = os.path.join(os.getcwd(), "./tmp/input_pos.scs")
                     siminput_path_neg = os.path.join(os.getcwd(), "./tmp/input_neg.scs")
                     
+                    
                         
                     if int(layer_idx.replace('Layer', '')) == 1:
                         print(f"Layer-{layer_idx.replace('Layer', '')} Simulation: Positive")
@@ -198,6 +203,9 @@ def main():
                         map_secondary_input(siminput_path_pos, siminput_path_neg, full_path, sim_time)
                         run_sim(run_string, infile_noext)
                         
+                glob.glob(siminput_path_pos)
+                glob.glob(siminput_path_neg)
+                
         ncolumn = int(f"{layer_idx.replace('Layer', '')}")-1
         print(per_layer_ncount[ncolumn])
         print(f'Debug: The current Layer ID running is: {layer_idx} and layer path is: {layer_dir} and ncolumn is: {ncolumn}')
@@ -219,19 +227,18 @@ def main():
         _ = process_crossbar_csv_to_image_csv(
             f'./tmp/output_layer_{layer_idx}.csv',
             f'./tmp/_voltage_{layer_idx}.csv',
-            layer_idx,
             vmax
         )
         
         # after generate_pwl_sources_ll(...) and SPICE run for layer1:
         # we get "./tmp/_voltage_Layer1.csv"
-        apply_hardware_activation(
+        '''apply_hardware_activation(
             f'./tmp/_voltage_{layer_idx}.csv',
             f'./tmp/_voltage_{layer_idx}_activated.csv',
             activation="relu",
             vth=0.0,
             vmax=vmax
-        )
+        )'''
         # then feed "./tmp/_voltage_Layer1_activated.csv" into your next
         # process_crossbar_csv_to_image_csv / current_to_voltage_fixed call.
 
@@ -240,27 +247,27 @@ def main():
         # …inside your for layer_idx in sorted(layer_weights) loop…
 
         # 1) compute the bias‐voltages in [0, vmax]
-        b_vec       = biases[layer_idx]               # e.g. length=64 for hidden, 10 for output
-        bias_list   = [[float(b)] for b in b_vec]     # wrap each bias in a list
-        b_voltages  = bias_to_voltage_signed(bias_list, layer_idx, vmax) #current_to_voltage_fixed(b_current , layer_idx, vmax)
+        #b_vec       = biases[layer_idx]               # e.g. length=64 for hidden, 10 for output
+        #bias_list   = [[float(b)] for b in b_vec]     # wrap each bias in a list
+        #b_voltages  = bias_to_voltage_signed(bias_list, layer_idx, vmax) #current_to_voltage_fixed(b_current , layer_idx, vmax)
         # flatten to a simple list of floats
-        b_voltages  = [bv[0] for bv in b_voltages]
+        #b_voltages  = [bv[0] for bv in b_voltages]
 
         # 2) load the layer’s voltage CSV
-        df_v = pd.read_csv(f'./tmp/_voltage_{layer_idx}_activated.csv')
+        #df_v = pd.read_csv(f'./tmp/_voltage_{layer_idx}_activated.csv')
 
         # 3) add each neuron’s bias‐voltage, clipping at vmax
-        for j, vb in enumerate(b_voltages):
-            col = str(j)
-            if col in df_v.columns:
-                df_v[col] = (df_v[col] + vb).clip(upper=vmax)
+        #for j, vb in enumerate(b_voltages):
+            #col = str(j)
+            #if col in df_v.columns:
+                #df_v[col] = (df_v[col] + vb).clip(upper=vmax)
 
         # 4) write it back out
-        df_v.to_csv(f'./tmp/_voltage_{layer_idx}_activated.csv', index=False)
+        #df_v.to_csv(f'./tmp/_voltage_{layer_idx}_activated.csv', index=False)
 
         # …now generate the PWL sources as before…
         generate_pwl_sources_ll(
-            f'./tmp/_voltage_{layer_idx}_activated.csv',
+            f'./tmp/_voltage_{layer_idx}.csv',
             PW, Trise, Tfall,
             synaptic_array_size[0]
         )
@@ -273,3 +280,22 @@ def main():
 if __name__ == "__main__":
     main()
     
+    
+    # Porb 1: In data collect script number of ouput column is hardcoded to 16. --> solved it by passing synaptic_array_size[1] (
+    # which is number of column in the crossbar array) as the output column size.
+    # Porb 2: Netlist is being created by synaptic array size: What if array size is smaller than the layer network?: devides in PE and Tile and simulate accordingly. (not an issue)
+    # Prob 3: For the second layer how to get the data from CSV file as they column size is synaptic_array_size[1] but next layer number of neuron can be different => Append all
+    # all the synaptic array column according to the architecture and output to a single CSV.
+    # Create the input for second layer --> pass it with new inputs to the run sim.
+    
+    #Check bias! Need to add bias to intermediate layers.
+    '''
+    Solving (prob 2-3->):
+    The array_x_y.npy weight distribution components are organized as row, col naming. That means, if the array name is "Array_3_1.npy" -> it denotes the subarray placed in row 3 and col 1 
+    in a flattend (not considering PE/TILE) scenario.
+    converted to voltage and generated pwl_source.
+    setup_simulation_args() only retunrs simulation command
+    map_secondary_input() needs to be modified and used for the further simulations
+    
+
+    '''
