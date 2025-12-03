@@ -23,18 +23,12 @@ series = {ICCAD '24}
 }
 ```
 
-## 🚀 Current Version Updates (v0.3.1)
+## 🚀 Current Version Updates (v1.0.1)
 
-- ✅ **SLP Simulation Support**  
-  The current version includes support for **SLP simulation**.
 
-- 🐞 **MLP Simulation - Known Issues**  
-  MLP Simulation results needs more validation for NN accuracy for different datasets.
-
-- ⚠️ **Other Known Issues**
+- ⚠️ ** Known Issues**
 
 1. ReRAM device non-ideality/non-linearity are not addressed in current version (currently in development).
-2. Quantization Aware Training is implemented but yet to be tested for bug fixes.
 3. Device variation and stochastic effects in analog crossbars are not modeled in this release.
 
 
