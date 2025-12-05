@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import numpy as np
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from typing import List, Tuple, Dict, Optional
 
 def read_and_process_file(file_path):
     """
@@ -140,3 +141,161 @@ def process_files_in_folder(base_path, start_time_tick, increment, output_csv_pa
     df_out.to_csv(output_csv_path, index=False)
     print(f"Output CSV file saved at: {output_csv_path}")
 
+def process_power_energy_in_folder(base_path: str,
+                                   output_csv_path: str,
+                                   power_label: str = ':pwr') -> None:
+    """
+    Recursively scan each immediate subfolder of `base_path` for Spectre psfascii results
+    under **.../psf/tran.tran.tran**, compute average power and total energy from the
+    `power_label` waveform (default ':pwr'), and write two CSVs:
+
+      - <output_csv_path base>_pwr.csv : columns ['Folder', 'PWR'] (+ a final 'Total_pwr' row)
+      - <output_csv_path base>_eng.csv : columns ['Folder', 'ENG'] (+ a final 'Total_eng' row)
+
+    Rows with basenames matching {'psf'} or regexes r'^PE\\d+$' and r'^Tile\\d+$' are excluded.
+    The total rows are elementwise sums across rows whose Folder starts with 'Array_'.
+
+    NOTE: This function is standalone and does not modify other code. It reuses the existing
+    `read_and_process_file()` defined in this module.
+    """
+    import re  # local import to avoid changing module-level imports
+
+    # Derive output file names
+    base, _ = os.path.splitext(output_csv_path)
+    pwr_csv_path = f"{base}_pwr.csv"
+    eng_csv_path = f"{base}_eng.csv"
+
+    # Collect immediate sub-folders under base_path (same semantics as process_files_in_folder)
+    folders_all = sorted({os.path.join(r, d) for r, dirs, _ in os.walk(base_path) for d in dirs})
+
+    # Filter out unwanted basenames
+    def _keep_folder(path: str) -> bool:
+        bn = os.path.basename(path)
+        if bn == 'psf':
+            return False
+        if re.fullmatch(r'PE\d+', bn):
+            return False
+        if re.fullmatch(r'Tile\d+', bn):
+            return False
+        return True
+
+    folders = [f for f in folders_all if _keep_folder(f)]
+
+    # If no folders, still emit empty CSVs with headers for reproducibility
+    if not folders:
+        pd.DataFrame(columns=['Folder', 'PWR']).to_csv(pwr_csv_path, index=False)
+        pd.DataFrame(columns=['Folder', 'ENG']).to_csv(eng_csv_path, index=False)
+        #print(f"Output CSV files saved at: {pwr_csv_path} and {eng_csv_path}")
+        return
+
+    pwr_rows: List[Dict[str, List[Optional[float]]]] = []
+    eng_rows: List[Dict[str, List[Optional[float]]]] = []
+
+    # Helper: compute (avg_power, energy) for a tran file using the psfascii reader
+    def _power_energy_from_tran(file_path: str, power_label: str = power_label) -> Optional[Tuple[float, float]]:
+        params, values = read_and_process_file(file_path)
+        if params.size == 0 or values.size == 0:
+            return None
+
+        # time vector
+        t_mask = (params == '"time"')
+        if not np.any(t_mask):
+            return None
+        t_vals = values[t_mask]
+        t_vals = t_vals[np.isfinite(t_vals)]
+        if t_vals.size < 2:
+            return None
+
+        # power vector
+        p_token = f'"{power_label}"'
+        p_mask = (params == p_token)
+        if not np.any(p_mask):
+            return None
+        p_vals = values[p_mask]
+        p_vals = p_vals[np.isfinite(p_vals)]
+        if p_vals.size == 0:
+            return None
+
+        n = min(t_vals.size, p_vals.size)
+        if n < 2:
+            return None
+        t_vals = t_vals[:n]
+        p_vals = p_vals[:n]
+
+        # Ensure non-decreasing time
+        if not np.all(np.diff(t_vals) >= 0):
+            order = np.argsort(t_vals)
+            t_vals = t_vals[order]
+            p_vals = p_vals[order[:p_vals.size]] if p_vals.size != order.size else p_vals[order]
+
+        duration = float(t_vals[-1] - t_vals[0])
+        if duration <= 0:
+            return None
+
+        energy_J = float(np.trapz(p_vals, t_vals))
+        avg_power_W = float(energy_J / duration)
+        return avg_power_W, energy_J
+
+    # For each immediate subfolder, recursively find all .../psf/tran.tran.tran files
+    for folder in folders:
+        tran_files: List[str] = []
+        for r, _, files in os.walk(folder):
+            if 'tran.tran.tran' in files and os.path.basename(r) == 'psf':
+                tran_files.append(os.path.join(r, 'tran.tran.tran'))
+        tran_files.sort()  # stable, deterministic order
+
+        # Aggregate results for this folder
+        avg_p_list: List[Optional[float]] = []
+        eng_list: List[Optional[float]] = []
+        for tf in tran_files:
+            res = _power_energy_from_tran(tf, power_label=power_label)
+            if res is None:
+                avg_p_list.append(np.nan)
+                eng_list.append(np.nan)
+            else:
+                avg_w, eng_j = res
+                avg_p_list.append(avg_w)
+                eng_list.append(eng_j)
+
+        pwr_rows.append({'Folder': os.path.basename(folder), 'PWR': avg_p_list})
+        eng_rows.append({'Folder': os.path.basename(folder), 'ENG': eng_list})
+
+    # Sort rows by Folder for stable output
+    pwr_rows.sort(key=lambda d: d.get('Folder', ''))
+    eng_rows.sort(key=lambda d: d.get('Folder', ''))
+
+    # Build DataFrames
+    df_pwr = pd.DataFrame(pwr_rows, columns=['Folder', 'PWR'])
+    df_eng = pd.DataFrame(eng_rows, columns=['Folder', 'ENG'])
+
+    # Compute totals across rows whose Folder starts with 'Array_'
+    def _elementwise_sum_lists(series_of_lists: pd.Series) -> List[float]:
+        # Determine max length
+        max_len = max((len(lst) if isinstance(lst, list) else 0) for lst in series_of_lists)
+        if max_len == 0:
+            return []
+        # Stack with NaN padding then nansum
+        mat = np.full((len(series_of_lists), max_len), np.nan, dtype=float)
+        for i, lst in enumerate(series_of_lists):
+            if isinstance(lst, list) and lst:
+                n = min(len(lst), max_len)
+                mat[i, :n] = lst[:n]
+        # Elementwise sum ignoring NaNs
+        return list(np.nansum(mat, axis=0))
+
+    array_mask_pwr = df_pwr['Folder'].astype(str).str.startswith('Array_')
+    array_mask_eng = df_eng['Folder'].astype(str).str.startswith('Array_')
+
+    total_pwr_list = _elementwise_sum_lists(df_pwr.loc[array_mask_pwr, 'PWR'])
+    total_eng_list = _elementwise_sum_lists(df_eng.loc[array_mask_eng, 'ENG'])
+
+    # Append totals as final rows
+    df_pwr = pd.concat([df_pwr, pd.DataFrame([{'Folder': 'Total_pwr', 'PWR': total_pwr_list}])],
+                       ignore_index=True)
+    df_eng = pd.concat([df_eng, pd.DataFrame([{'Folder': 'Total_eng', 'ENG': total_eng_list}])],
+                       ignore_index=True)
+
+    # Write CSVs
+    df_pwr.to_csv(pwr_csv_path, index=False)
+    df_eng.to_csv(eng_csv_path, index=False)
+    #print(f"Output CSV files saved at: {pwr_csv_path} and {eng_csv_path}")
