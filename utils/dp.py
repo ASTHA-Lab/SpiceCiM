@@ -3,70 +3,6 @@ import ast
 from collections import defaultdict
 from typing import List, Tuple
 
-import json
-import numpy as np
-
-def compute_mapping_ranges(layer_weights: dict, layer_biases: dict,
-                           X_train: np.ndarray, file_out: str):
-    """
-    layer_weights, layer_biases: Dict like {'Layer1': W1, 'Layer2': W2, …}
-    X_train: (N_samples, N_inputs) raw training data
-    """
-    ranges = {}
-    # flatten image‐shaped input into (N_samples, nin)
-    activations = X_train.copy()
-    if activations.ndim > 2:
-        activations = activations.reshape(activations.shape[0], -1)
-
-    # Sort by numerical layer index
-    for name in sorted(layer_weights.keys(),
-                       key=lambda n: int(n.replace('Layer',''))):
-        W = layer_weights[name]      # Keras Dense kernel: shape = (nin, nout)
-        b = layer_biases[name]       # bias: shape = (nout,)
-
-        # compute raw currents: (N_samples, nin) · (nin, nout) → (N_samples, nout)
-        currents = activations.dot(W) + b[np.newaxis, :]
-
-        ranges[name] = {
-            "min": float(currents.min()),
-            "max": float(currents.max())
-        }
-
-        # propagate through ReLU for next layer
-        activations = np.maximum(currents, 0)
-
-    with open(file_out, 'w') as f:
-        json.dump(ranges, f, indent=2)
-
-    return ranges
-
-
-
-# SpiceCim.py
-import json, numpy as np
-
-# load once at top
-
-
-def current_to_voltage_fixed(currents, layer_idx, vmax):
-    """
-    currents: list of lists, shape (n_samples, n_neurons)
-    returns same shape lists with voltages in [0, vmax]
-    """
-    with open("./tmp/mapping_ranges.json") as f:
-        _RANGES = json.load(f)
-    arr = np.array(currents, dtype=float)
-    r = _RANGES[f"{layer_idx}"]
-    cmin, cmax = r["min"], r["max"]
-    # avoid division by zero
-    scale = vmax / (cmax - cmin) if cmax != cmin else 1.0
-    volt = (arr - cmin) * scale
-    # clamp
-    volt = np.clip(volt, 0, vmax)
-    return volt.tolist()
-
-
-
 def current_to_voltage(
     summed_currents: List[List[float]],
     vmax: float
@@ -100,46 +36,10 @@ def current_to_voltage(
         voltages.append(col_v)
     return voltages
 
-
-# SpiceCim.py (below current_to_voltage_fixed)
-#import numpy as np
-
-def bias_to_voltage_signed(bias_list, layer_idx, vmax):
-    """
-    bias_list: list of floats *or* singleton sequences ([[b0], [b1], …])
-    layer_idx: integer 1, 2, … matching your JSON keys "Layer1", "Layer2", …
-    vmax: maximum absolute voltage
-
-    Returns: [[v0], [v1], …] with v ∈ [-vmax, +vmax]
-    """
-    # 1) load the precomputed min/max for this layer
-    with open("./tmp/mapping_ranges.json") as f:
-        mapping = json.load(f)
-    key = f"{layer_idx}"
-    if key not in mapping:
-        raise KeyError(f"Could not find mapping ranges for '{key}' in JSON")
-    r = mapping[key]
-    
-    # 2) compute symmetric scale from ±max_abs_current -> ±vmax
-    max_abs = max(abs(r["min"]), abs(r["max"]), 1e-12)
-    scale   = vmax / max_abs
-    
-    # 3) unpack, scale, clamp, and re‑wrap
-    out = []
-    for b in bias_list:
-        # unpack if b is a sequence
-        val = float(b[0]) if isinstance(b, (list, tuple, np.ndarray)) else float(b)
-        v   = val * scale
-        v   = float(np.clip(v, -vmax, vmax))
-        out.append([v])
-    return out
-
-
 def process_crossbar_csv_to_image_csv(
     input_path: str,
     output_path: str,
-    layer_id,
-    vmax: float = 1.0,
+    vmax: float = 1.0
 ) -> List[List[float]]:
     """
     1) Reads the input CSV (Folder + time‑series lists),
@@ -198,7 +98,7 @@ def process_crossbar_csv_to_image_csv(
         ])
 
     # convert currents → voltages
-    voltages = current_to_voltage_fixed(summed, layer_id, vmax)
+    voltages = current_to_voltage(summed, vmax)
 
     # build and write final CSV
     rows = []
