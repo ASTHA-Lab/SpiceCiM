@@ -20,6 +20,7 @@ import configparser
 #from utils.data_collect import *
 from utils.dp import *
 from utils.dc import *
+from utils.pwr_eng import generate_power_energy_summary
 
 #os.makedirs('tmp')
 
@@ -223,6 +224,7 @@ def main():
 
         
     compare_predictions(f'./tmp/_voltage_{layer_idx}.csv', './tmp/tensorOut.csv', './tmp/Infer_out.csv')
+    generate_power_energy_summary('./tmp')
         
 
 if __name__ == "__main__":
