@@ -23,14 +23,6 @@ series = {ICCAD '24}
 }
 ```
 
-## 🚀 Current Version Updates (v1.0.1)
-
-
-- ⚠️ ** Known Issues**
-
-1. ReRAM device non-ideality/non-linearity are not addressed in current version (currently in development).
-3. Device variation and stochastic effects in analog crossbars are not modeled in this release.
-
 
 
 ## Table of Contents
